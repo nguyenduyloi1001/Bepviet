@@ -38,9 +38,10 @@ public class SecurityConfig {
 
                         // Public hoàn toàn cho luồng đăng nhập
                         .requestMatchers("/api/auth/**").permitAll()
-
                         // 🔥 SỬA LỖI LOGIC ĐĂNG KÝ: Cho phép bất kỳ ai (chưa đăng nhập) cũng có thể gọi API POST để tạo User
                         .requestMatchers(HttpMethod.POST, "/api/user").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/recipe-tags/**").permitAll()
 
                         // GET public
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
