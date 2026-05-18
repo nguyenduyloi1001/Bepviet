@@ -1,6 +1,7 @@
 package com.example.Bep.Viet.config;
 
 import com.example.Bep.Viet.enums.Role;
+import com.example.Bep.Viet.enums.UserStatus;
 import com.example.Bep.Viet.model.User;
 import com.example.Bep.Viet.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,9 @@ public class ApplicationInitConfig {
                         .username("admin")
                         .fullName("Administrator")
                         .password(passwordEncoder.encode("123456"))
-                        .email("admin@example.com")
+                        .email("admin@gmail.com")
                         .role(Role.ADMIN)
+                        .status(UserStatus.ACTIVE) // ← thêm dòng này
                         .build();
                 userRepository.save(user);
                 log.warn("Admin user has been created with default username: admin, password: admin");

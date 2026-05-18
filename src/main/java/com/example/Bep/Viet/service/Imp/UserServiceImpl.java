@@ -68,6 +68,12 @@ public class UserServiceImpl implements UserService {
         }
         return responses;
     }
+    @Override
+    public UserResponse updateRoleUser(Long userId, Role role) {
+        User user = findUserById(userId);
+        user.setRole(role);
+        return mapToResponse(userRepository.save(user));
+    }
 
     @Override
     public List<UserResponse> getAllUserByRole(Role role) {
@@ -77,6 +83,13 @@ public class UserServiceImpl implements UserService {
             responses.add(mapToResponse(user));
         }
         return responses;
+    }
+
+    @Override
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return mapToResponse(user);
     }
 
     @Transactional
@@ -135,4 +148,6 @@ public class UserServiceImpl implements UserService {
                 .build();
 
     }
+
+
 }

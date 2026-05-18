@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +26,10 @@ public class RecipeController {
     public ResponseEntity<RecipeResponse> createRecipe(
             @Valid @RequestBody RecipeRequest request,
             @AuthenticationPrincipal Long userId) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(recipeService.createRecipe(request, userId));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(recipeService.createRecipe(request, userId));
     }
+
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<RecipeResponse>> getByUserId(@PathVariable Long userId) {
@@ -60,6 +63,7 @@ public class RecipeController {
             @AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(recipeService.updateRecipe(id, request, userId));
     }
+
 
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")

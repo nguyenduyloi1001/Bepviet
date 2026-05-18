@@ -80,13 +80,13 @@ public class AuthenticationImpl implements AuthenticationService {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
+                .subject(user.getEmail())
                 .issuer("BepViet.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(expiration, ChronoUnit.SECONDS).toEpochMilli()))
-                .claim("role", user.getRole().name())
                 .claim("userId", user.getId())
+                .claim("role", user.getRole().name())
                 .build();
 
         JWSObject jwsObject = new JWSObject(header, new Payload(claimsSet.toJSONObject()));

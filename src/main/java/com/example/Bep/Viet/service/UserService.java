@@ -17,4 +17,6 @@ public interface UserService {
     UserResponse updateUser(Long userId,UserUpdateRequest request);
     UserResponse updateStatusUser(Long userId,UserStatus status);
     void deleteUserById(Long id);
+    UserResponse getUserByEmail(String email);
+    UserResponse updateRoleUser(Long userId, Role role);
 }

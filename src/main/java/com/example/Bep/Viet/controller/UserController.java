@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,7 +38,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById (@PathVariable Long id){
         UserResponse userResponse = userService.getUserById(id);
         ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
@@ -89,7 +91,7 @@ public class UserController {
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserUpdateRequest request) {
@@ -128,5 +130,28 @@ public class UserController {
                 .result(null)
                 .build();
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
+    }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getMe(
+            @AuthenticationPrincipal Long userId) {
+        UserResponse userResponse = userService.getUserById(userId);
+        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
+                .code(1000)
+                .message("Lấy thành công User")
+                .result(userResponse)
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+            @PathVariable Long id,
+            @RequestParam Role role) {
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .code(1000)
+                .message("Cập nhật vai trò người dùng thành công")
+                .result(userService.updateRoleUser(id, role))
+                .build());
     }
 }

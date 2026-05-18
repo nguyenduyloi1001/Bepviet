@@ -39,6 +39,7 @@ public class Comment {
 
     // Danh sách reply con, xoá cha → tự xoá con theo 1 parent → nhiều replies
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Comment> replies = new ArrayList<>();
 
     @Column(columnDefinition = "TEXT", nullable = false)

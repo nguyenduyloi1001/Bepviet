@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/recipes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // 👈 thêm dòng này
+                        .requestMatchers(HttpMethod.GET, "/api/ingredients/**").permitAll()
 
                         // Chỉ ADMIN
                         .requestMatchers("/api/posts/*/approve").hasRole("ADMIN")
