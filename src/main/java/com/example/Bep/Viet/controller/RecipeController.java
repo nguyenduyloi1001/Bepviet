@@ -66,7 +66,7 @@ public class RecipeController {
 
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and hasRole('ADMIN')")
     public ResponseEntity<Void> deleteRecipe(
             @PathVariable Long id,
             @AuthenticationPrincipal Long userId) {

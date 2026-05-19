@@ -18,6 +18,8 @@ import com.example.Bep.Viet.service.RecipeIngredientService;
 import com.example.Bep.Viet.service.RecipeService;
 import com.example.Bep.Viet.service.RecipeStepService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,7 +73,7 @@ public class RecipeServiceImpl implements RecipeService {
     @Transactional
     public RecipeResponse getRecipeById(Long id) {
         Recipe recipe = findRecipeById(id);
-        repository.incrementViewCount(id);
+//        repository.incrementViewCount(id);
         return mapToResponse(recipe);
     }
 
@@ -134,9 +136,17 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     public void delete(Long id, Long currentUserId) {
         Recipe recipe = findRecipeById(id);
-        if(!recipe.getUser().getId().equals(currentUserId)){
+
+        // Kiểm tra xem user đang đăng nhập có quyền ROLE_ADMIN hay không
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        // Nếu KHÔNG PHẢI ADMIN và CŨNG KHÔNG PHẢI CHỦ SỞ HỮU -> Mới chặn lại
+        if (!isAdmin && !recipe.getUser().getId().equals(currentUserId)) {
             throw new AppException(ErrorCode.RECIPE_FORBIDDEN);
         }
+
         repository.delete(recipe);
     }
 

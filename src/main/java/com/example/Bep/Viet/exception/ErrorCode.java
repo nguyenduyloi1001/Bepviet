@@ -31,7 +31,17 @@ public enum ErrorCode {
     RECIPE_NOT_IN_COOKBOOK(4005,"Công thức không tồn tại trong Cookbook"),
     POST_NOT_FOUND(4006,"Bài viết không tồn tại"),
     POST_FORBIDDEN(4007,"Bạn không có quyền thao tác bài viết này"),
-    COMMENT_NOT_FOUND(4008,"Không tìm thấy comment");
+    COMMENT_NOT_FOUND(4008,"Không tìm thấy comment"),
+    QUESTION_NOT_FOUND(5001,"Không tìm thấy Question"),
+    ANSWER_NOT_FOUND(5002,"Không tìm thấy Answer"),
+    ANSWER_ALREADY_EXISTS(5003,"Câu trả lời đã tồn tại"),
+    ANSWER_FORBIDDEN(5004,"Bạn không có quyền trả lời câu hỏi này"),
+    MEAL_PLAN_NOT_FOUND(5005,"Meal plan không tìm thấy"),
+    MEAL_PLAN_ITEM_EXISTED(5006,"Meal plan item đã tồn tại"),
+    FORBIDDEN(5007,"bạn không có quyền thao tác"),
+    REPORT_NOT_FOUND(5008,"Không tìm tháya report"),
+    RATING_NOT_FOUND(6001, "Không tìm thấy đánh giá"),
+    ALREADY_RATED(6002, "Bạn đã đánh giá công thức này rồi");
 
 
     private final int code;

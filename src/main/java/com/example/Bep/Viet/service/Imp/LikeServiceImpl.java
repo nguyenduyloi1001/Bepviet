@@ -7,6 +7,7 @@ import com.example.Bep.Viet.response.LikeResponse;
 import com.example.Bep.Viet.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -17,6 +18,7 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository likeRepository;
 
     @Override
+    @Transactional
     public LikeResponse toggle(Long userId, LikeRequest request) {
         Like.TargetType type = request.getTargetType();
         Long targetId = request.getTargetId();
