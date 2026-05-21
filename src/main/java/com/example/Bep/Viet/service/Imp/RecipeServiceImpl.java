@@ -1,6 +1,8 @@
 package com.example.Bep.Viet.service.Imp;
 
 import com.example.Bep.Viet.Util.SlugUtil;
+import com.example.Bep.Viet.enums.NotificationTargetType;
+import com.example.Bep.Viet.enums.NotificationType;
 import com.example.Bep.Viet.enums.RecipeStatus;
 import com.example.Bep.Viet.exception.AppException;
 import com.example.Bep.Viet.exception.ErrorCode;
@@ -14,6 +16,7 @@ import com.example.Bep.Viet.request.RecipeRequest;
 import com.example.Bep.Viet.response.RecipeIngredientResponse;
 import com.example.Bep.Viet.response.RecipeResponse;
 import com.example.Bep.Viet.response.RecipeStepResponse;
+import com.example.Bep.Viet.service.NotificationService;
 import com.example.Bep.Viet.service.RecipeIngredientService;
 import com.example.Bep.Viet.service.RecipeService;
 import com.example.Bep.Viet.service.RecipeStepService;
@@ -26,11 +29,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class RecipeServiceImpl implements RecipeService {
+
     private final RecipeRepository repository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final RecipeIngredientService recipeIngredientService;
     private final RecipeStepService recipeStepService;
+    private final NotificationService notificationService;
+
     @Override
     @Transactional
     public RecipeResponse createRecipe(RecipeRequest request, Long userId) {
@@ -63,7 +69,7 @@ public class RecipeServiceImpl implements RecipeService {
 
         Recipe saveRecipe = repository.save(recipe);
         recipeIngredientService.addAll(saveRecipe, request.getIngredients());
-        recipeStepService.addAll(saveRecipe,request.getSteps());
+        recipeStepService.addAll(saveRecipe, request.getSteps());
         return mapToResponse(saveRecipe);
     }
 
@@ -78,7 +84,8 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     @Transactional
     public RecipeResponse getBySlug(String slug) {
-        Recipe recipe= repository.findBySlug(slug).orElseThrow(()->new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+        Recipe recipe = repository.findBySlug(slug)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         repository.incrementViewCount(recipe.getId());
         return mapToResponse(recipe);
     }
@@ -90,7 +97,7 @@ public class RecipeServiceImpl implements RecipeService {
 
     @Override
     public List<RecipeResponse> search(String keyword, Long dishTypeId, Long regionId, Long difficultyId) {
-         return repository.searchRecipes(keyword, dishTypeId, regionId, difficultyId)
+        return repository.searchRecipes(keyword, dishTypeId, regionId, difficultyId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -106,7 +113,6 @@ public class RecipeServiceImpl implements RecipeService {
         }
 
         if (!recipe.getName().equals(request.getName())) {
-
             if (repository.existsByNameAndUserIdAndIdNot(request.getName(), currentUserId, id)) {
                 throw new AppException(ErrorCode.RECIPE_NAME_EXISTED);
             }
@@ -134,7 +140,7 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     public void delete(Long id, Long currentUserId) {
         Recipe recipe = findRecipeById(id);
-        if(!recipe.getUser().getId().equals(currentUserId)){
+        if (!recipe.getUser().getId().equals(currentUserId)) {
             throw new AppException(ErrorCode.RECIPE_FORBIDDEN);
         }
         repository.delete(recipe);
@@ -144,14 +150,36 @@ public class RecipeServiceImpl implements RecipeService {
     public RecipeResponse approve(Long id) {
         Recipe recipe = findRecipeById(id);
         recipe.setStatus(RecipeStatus.PUBLISHED);
-        return mapToResponse(repository.save(recipe));
+        Recipe saved = repository.save(recipe);
+
+        // ✅ Thông báo cho tác giả: recipe được duyệt
+        notificationService.send(
+                saved.getUser().getId(),
+                null,
+                NotificationType.recipe_approved,
+                saved.getId(),
+                NotificationTargetType.recipe
+        );
+
+        return mapToResponse(saved);
     }
 
     @Override
     public RecipeResponse reject(Long id) {
         Recipe recipe = findRecipeById(id);
         recipe.setStatus(RecipeStatus.REJECTED);
-        return mapToResponse(repository.save(recipe));
+        Recipe saved = repository.save(recipe);
+
+        // ✅ Thông báo cho tác giả: recipe bị từ chối
+        notificationService.send(
+                saved.getUser().getId(),
+                null,
+                NotificationType.recipe_rejected,
+                saved.getId(),
+                NotificationTargetType.recipe
+        );
+
+        return mapToResponse(saved);
     }
 
     @Override
@@ -165,18 +193,20 @@ public class RecipeServiceImpl implements RecipeService {
         return repository.findByStatus(status).stream().map(this::mapToResponse).toList();
     }
 
-    //helper
-    private Recipe findRecipeById(Long id){
-        return repository.findById(id).orElseThrow(()->new AppException(ErrorCode.RECIPE_NOT_FOUND));
+    // ─── Helpers ─────────────────────────────────────────────────
+
+    private Recipe findRecipeById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
     }
 
-    private Category findCategoryById(Long id){
-        if (id == null)
-            return null;
-        return categoryRepository.findById(id).orElseThrow(()-> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+    private Category findCategoryById(Long id) {
+        if (id == null) return null;
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
-    private RecipeResponse mapToResponse(Recipe recipe){
+    private RecipeResponse mapToResponse(Recipe recipe) {
         return RecipeResponse.builder()
                 .id(recipe.getId())
                 .name(recipe.getName())
@@ -211,7 +241,7 @@ public class RecipeServiceImpl implements RecipeService {
                                         .note(ri.getNote())
                                         .build())
                                 .toList())
-                .steps(recipe.getSteps() == null ? null :  // thêm vào đây
+                .steps(recipe.getSteps() == null ? null :
                         recipe.getSteps().stream()
                                 .map(s -> RecipeStepResponse.builder()
                                         .id(s.getId())

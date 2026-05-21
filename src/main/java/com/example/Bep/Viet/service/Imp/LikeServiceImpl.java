@@ -1,10 +1,15 @@
 package com.example.Bep.Viet.service.Imp;
 
+import com.example.Bep.Viet.enums.NotificationTargetType;
+import com.example.Bep.Viet.enums.NotificationType;
 import com.example.Bep.Viet.model.Like;
 import com.example.Bep.Viet.repository.LikeRepository;
+import com.example.Bep.Viet.repository.PostRepository;
+import com.example.Bep.Viet.repository.RecipeRepository;
 import com.example.Bep.Viet.request.LikeRequest;
 import com.example.Bep.Viet.response.LikeResponse;
 import com.example.Bep.Viet.service.LikeService;
+import com.example.Bep.Viet.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +20,9 @@ import java.util.Optional;
 public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
+    private final RecipeRepository recipeRepository;
+    private final PostRepository postRepository;
+    private final NotificationService notificationService;
 
     @Override
     public LikeResponse toggle(Long userId, LikeRequest request) {
@@ -35,6 +43,18 @@ public class LikeServiceImpl implements LikeService {
                     .targetType(type)
                     .build());
             liked = true;
+
+            // ✅ Gửi thông báo khi LIKE (không gửi khi unlike)
+            Long ownerId = resolveOwnerId(type, targetId);
+            if (ownerId != null) {
+                notificationService.send(
+                        ownerId,
+                        userId,
+                        NotificationType.new_like,
+                        targetId,
+                        mapToNotifTargetType(type)
+                );
+            }
         }
 
         long total = likeRepository.countByTargetIdAndTargetType(targetId, type);
@@ -51,5 +71,26 @@ public class LikeServiceImpl implements LikeService {
     public boolean isLiked(Long userId, Long targetId, String targetType) {
         return likeRepository.existsByUserIdAndTargetIdAndTargetType(
                 userId, targetId, Like.TargetType.valueOf(targetType));
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────
+
+    private Long resolveOwnerId(Like.TargetType type, Long targetId) {
+        if (type == Like.TargetType.recipe) {
+            return recipeRepository.findById(targetId)
+                    .map(r -> r.getUser().getId())
+                    .orElse(null);
+        } else if (type == Like.TargetType.post) {
+            return postRepository.findById(targetId)
+                    .map(p -> p.getUser().getId())
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    private NotificationTargetType mapToNotifTargetType(Like.TargetType type) {
+        if (type == Like.TargetType.recipe)  return NotificationTargetType.recipe;
+        if (type == Like.TargetType.post)    return NotificationTargetType.post;
+        return NotificationTargetType.post;
     }
 }
