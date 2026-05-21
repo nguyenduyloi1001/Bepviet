@@ -40,6 +40,8 @@ public class AnswerServiceImpl implements AnswerService {
                 .user(admin)
                 .content(request.getContent())
                 .build();
+        question.setSolved(true);
+        questionRepository.save(question);
 
         return mapToResponse(repository.save(answer));
     }

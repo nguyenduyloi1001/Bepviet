@@ -6,6 +6,7 @@ import com.example.Bep.Viet.exception.AppException;
 import com.example.Bep.Viet.exception.ErrorCode;
 import com.example.Bep.Viet.model.Report;
 import com.example.Bep.Viet.model.User;
+import com.example.Bep.Viet.repository.RecipeRepository;
 import com.example.Bep.Viet.repository.ReportRepository;
 import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.ReportRequest;
@@ -22,9 +23,12 @@ import java.util.List;
 public class ReportServiceImpl implements ReportService {
     private final ReportRepository repository;
     private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository; // thêm để lấy slug
+
     @Override
     public ReportResponse createReport(Long userId, ReportRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(()->new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         Report report = Report.builder()
                 .user(user)
                 .targetId(request.getTargetId())
@@ -52,7 +56,8 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public List<ReportResponse> getReportsByTarget(Long targetId, TargetType targetType) {
-        return repository.findByTargetIdAndTargetType(targetId,targetType).stream().map(this::mapToResponse).toList();
+        return repository.findByTargetIdAndTargetType(targetId, targetType)
+                .stream().map(this::mapToResponse).toList();
     }
 
     @Override
@@ -72,17 +77,31 @@ public class ReportServiceImpl implements ReportService {
         Report report = findById(id);
         repository.delete(report);
     }
-    //helper
-    private Report findById(Long id){
-        return repository.findById(id).orElseThrow(()->new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private Report findById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
     }
 
-    private ReportResponse mapToResponse(Report report){
+    private String resolveSlug(TargetType type, Long targetId) {
+        if (type == TargetType.RECIPE) {
+            return recipeRepository.findById(targetId)
+                    .map(r -> r.getSlug())
+                    .orElse(null);
+        }
+        // POST: thêm postRepository tương tự nếu cần
+        return null;
+    }
+
+    private ReportResponse mapToResponse(Report report) {
         return ReportResponse.builder()
                 .id(report.getId())
                 .userId(report.getUser().getId())
                 .email(report.getUser().getEmail())
                 .targetId(report.getTargetId())
+                .targetSlug(resolveSlug(report.getTargetType(), report.getTargetId()))
                 .targetType(report.getTargetType())
                 .reason(report.getReason())
                 .status(report.getReportStatus())

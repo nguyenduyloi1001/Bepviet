@@ -19,6 +19,7 @@ public class ReportResponse {
     private String email;
     private Long targetId;
     private TargetType targetType;
+    private String targetSlug;
     private String reason;
     private ReportStatus status;
     private LocalDateTime createdAt;
