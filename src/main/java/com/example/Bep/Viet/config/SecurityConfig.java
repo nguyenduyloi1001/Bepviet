@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
+                        .requestMatchers("/api/notifications/**").authenticated()
                         // Public hoàn toàn cho luồng đăng nhập
                         .requestMatchers("/api/auth/**").permitAll()
                         // 🔥 SỬA LỖI LOGIC ĐĂNG KÝ: Cho phép bất kỳ ai (chưa đăng nhập) cũng có thể gọi API POST để tạo User

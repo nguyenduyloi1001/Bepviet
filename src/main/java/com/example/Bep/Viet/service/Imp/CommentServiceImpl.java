@@ -1,24 +1,35 @@
 package com.example.Bep.Viet.service.Imp;
 
+import com.example.Bep.Viet.enums.NotificationTargetType;
+import com.example.Bep.Viet.enums.NotificationType;
 import com.example.Bep.Viet.enums.TargetType;
 import com.example.Bep.Viet.exception.AppException;
 import com.example.Bep.Viet.exception.ErrorCode;
 import com.example.Bep.Viet.model.Comment;
 import com.example.Bep.Viet.model.User;
 import com.example.Bep.Viet.repository.CommentRepository;
+import com.example.Bep.Viet.repository.PostRepository;
+import com.example.Bep.Viet.repository.RecipeRepository;
 import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.CommentRequest;
 import com.example.Bep.Viet.response.CommentResponse;
 import com.example.Bep.Viet.service.CommentService;
+import com.example.Bep.Viet.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
+
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository;
+    private final PostRepository postRepository;
+    private final NotificationService notificationService;
+
     @Override
     public CommentResponse create(CommentRequest request, Long userId) {
         User user = userRepository.findById(userId)
@@ -38,7 +49,36 @@ public class CommentServiceImpl implements CommentService {
                 .content(request.getContent())
                 .build();
 
-        return mapToResponse(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+
+        // ─── Gửi thông báo ───────────────────────────────────────
+        NotificationTargetType notifTargetType = mapToNotifTargetType(request.getTargetType());
+
+        if (parent != null) {
+            // Reply → báo cho chủ comment gốc (new_answer)
+            notificationService.send(
+                    parent.getUser().getId(),
+                    userId,
+                    NotificationType.new_answer,
+                    saved.getId(),
+                    notifTargetType
+            );
+        } else {
+            // Comment mới → báo cho chủ bài (new_comment)
+            Long contentOwnerId = resolveContentOwnerId(request.getTargetType(), request.getTargetId());
+            if (contentOwnerId != null) {
+                notificationService.send(
+                        contentOwnerId,
+                        userId,
+                        NotificationType.new_comment,
+                        request.getTargetId(),
+                        notifTargetType
+                );
+            }
+        }
+        // ─────────────────────────────────────────────────────────
+
+        return mapToResponse(saved);
     }
 
     @Override
@@ -53,11 +93,9 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentResponse update(Long id, String content, Long currentUserId) {
         Comment comment = findById(id);
-
         if (!comment.getUser().getId().equals(currentUserId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-
         comment.setContent(content);
         return mapToResponse(commentRepository.save(comment));
     }
@@ -65,17 +103,41 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public void delete(Long id, Long currentUserId) {
         Comment comment = findById(id);
-
         if (!comment.getUser().getId().equals(currentUserId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-
         commentRepository.delete(comment);
     }
+
+    // ─── Helpers ─────────────────────────────────────────────────
 
     private Comment findById(Long id) {
         return commentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+
+    private Long resolveContentOwnerId(TargetType targetType, Long targetId) {
+        if (targetType == TargetType.RECIPE) {
+            return recipeRepository.findById(targetId)
+                    .map(r -> r.getUser().getId())
+                    .orElse(null);
+        } else if (targetType == TargetType.POST) {
+            return postRepository.findById(targetId)
+                    .map(p -> p.getUser().getId())
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    private NotificationTargetType mapToNotifTargetType(TargetType targetType) {
+        if (targetType == TargetType.RECIPE) {
+            return NotificationTargetType.recipe;
+        } else if (targetType == TargetType.POST) {
+            return NotificationTargetType.post;
+        } else if (targetType == TargetType.QUESTION) {
+            return NotificationTargetType.question;
+        }
+        return NotificationTargetType.post;
     }
 
     private CommentResponse mapToResponse(Comment comment) {
@@ -88,7 +150,7 @@ public class CommentServiceImpl implements CommentService {
                 .targetType(comment.getTargetType())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .content(comment.getContent())
-                .replies(comment.getReplies().stream().map(this::mapToResponse).toList()) // đệ quy
+                .replies(comment.getReplies().stream().map(this::mapToResponse).toList())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
