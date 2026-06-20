@@ -21,4 +21,6 @@ public interface IngredientRepository extends JpaRepository<Ingredient,Long> {
     List<Ingredient> searchIngredients(
             @Param("keyword") String keyword,
             @Param("categoryId") Long categoryId);
+
+    List<Ingredient> findByNameContainingIgnoreCase(String keyword);
 }

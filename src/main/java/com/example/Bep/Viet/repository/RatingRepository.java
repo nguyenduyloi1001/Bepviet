@@ -2,8 +2,10 @@ package com.example.Bep.Viet.repository;
 
 import com.example.Bep.Viet.model.Rating;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +22,9 @@ public interface RatingRepository extends JpaRepository<Rating,Long> {
 
     // Đếm số lượng rating của 1 recipe
     long countByRecipeId(Long recipeId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Rating r WHERE r.recipe.id = :recipeId")
+    void deleteByRecipeId(Long recipeId);
 }

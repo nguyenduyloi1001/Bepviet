@@ -52,7 +52,7 @@ public class LikeServiceImpl implements LikeService {
                 notificationService.send(
                         ownerId,
                         userId,
-                        NotificationType.new_like,
+                        NotificationType.NEW_LIKE,
                         targetId,
                         mapToNotifTargetType(type)
                 );
@@ -73,6 +73,11 @@ public class LikeServiceImpl implements LikeService {
     public boolean isLiked(Long userId, Long targetId, String targetType) {
         return likeRepository.existsByUserIdAndTargetIdAndTargetType(
                 userId, targetId, Like.TargetType.valueOf(targetType));
+    }
+
+    @Override
+    public long countTotalLikesByUserId(Long userId) {
+        return likeRepository.countTotalLikesByUserId(userId);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────

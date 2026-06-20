@@ -38,7 +38,6 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById (@PathVariable Long id){
         UserResponse userResponse = userService.getUserById(id);
         ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()

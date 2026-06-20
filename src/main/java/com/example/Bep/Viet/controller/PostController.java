@@ -2,6 +2,11 @@ package com.example.Bep.Viet.controller;
 
 import com.example.Bep.Viet.enums.PostStatus;
 import com.example.Bep.Viet.enums.PostType;
+import com.example.Bep.Viet.enums.Role;
+import com.example.Bep.Viet.exception.AppException;
+import com.example.Bep.Viet.exception.ErrorCode;
+import com.example.Bep.Viet.model.User;
+import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.PostRequest;
 import com.example.Bep.Viet.response.PostResponse;
 import com.example.Bep.Viet.service.PostService;
@@ -20,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<List<PostResponse>> getAll() {
@@ -64,11 +70,20 @@ public class PostController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> delete(
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER', 'CHEF', 'BLOGGER')")
+    public ResponseEntity<Void> deletePost(
             @PathVariable Long id,
             @AuthenticationPrincipal Long userId) {
-        postService.delete(id, userId);
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+
+        postService.delete(id, userId, isAdmin);
+
         return ResponseEntity.noContent().build();
     }
 

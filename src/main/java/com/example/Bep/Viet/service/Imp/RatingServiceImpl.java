@@ -14,6 +14,7 @@ import com.example.Bep.Viet.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -27,11 +28,18 @@ public class RatingServiceImpl implements RatingService {
         User user = userRepository.findById(userId).orElseThrow(()->new AppException(ErrorCode.USER_NOT_FOUND));
         Recipe recipe = recipeRepository.findById(request.getRecipeId()).orElseThrow(()->new AppException(ErrorCode.RECIPE_NOT_FOUND));
         Rating rating = ratingRepository.findByUserIdAndRecipeId(userId, request.getRecipeId()).orElse(Rating.builder()
-                        .user(user)
-                        .recipe(recipe)
+                .user(user)
+                .recipe(recipe)
                 .build());
         rating.setStars(request.getStars());
-        return mapToResponse(ratingRepository.save(rating));
+        ratingRepository.save(rating);
+
+        // Cập nhật avgRating vào recipe
+        Double avg = ratingRepository.getAverageStars(request.getRecipeId());
+        recipe.setAvgRating(avg != null ? BigDecimal.valueOf(avg) : BigDecimal.ZERO);
+        recipeRepository.save(recipe);
+
+        return mapToResponse(rating);
     }
 
     @Override

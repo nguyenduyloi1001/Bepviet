@@ -26,7 +26,8 @@ public class RecipeResponse {
 
     private Long userId;
     private String userName;
-
+    private String userAvatar;
+    private String userRole;
     private Long dishTypeId;
     private String dishTypeName;
 

@@ -3,6 +3,9 @@ package com.example.Bep.Viet.repository;
 import com.example.Bep.Viet.enums.TargetType;
 import com.example.Bep.Viet.model.Comment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,5 +18,10 @@ public interface CommentRepository extends JpaRepository<Comment,Long> {
 
     // Xoá toàn bộ comment của 1 target (khi xoá bài viết/recipe)
     void deleteByTargetIdAndTargetType(Long targetId, TargetType targetType);
+
+//    @Modifying
+//    @Transactional
+//    @Query("DELETE FROM Comment c WHERE c.post.id = :postId")
+//    void deleteByPostId(Long postId);
 
 }

@@ -40,4 +40,9 @@ public class LikeController {
             @RequestParam String targetType) {
         return ResponseEntity.ok(likeService.isLiked(userId, targetId, targetType));
     }
+
+    @GetMapping("/user/{userId}/count")
+    public ResponseEntity<Long> countUserLikes(@PathVariable Long userId) {
+        return ResponseEntity.ok(likeService.countTotalLikesByUserId(userId));
+    }
 }

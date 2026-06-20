@@ -17,8 +17,6 @@ public class NotificationResponse {
     private Long targetId;
     private NotificationTargetType targetType;
     private Boolean isRead;
-    private LocalDateTime createdAt;
-
-    // Message hiển thị cho frontend (tạo sẵn ở backend cho tiện)
     private String message;
+    private LocalDateTime createdAt;
 }

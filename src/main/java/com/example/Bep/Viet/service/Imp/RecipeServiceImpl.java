@@ -7,9 +7,7 @@ import com.example.Bep.Viet.exception.ErrorCode;
 import com.example.Bep.Viet.model.Category;
 import com.example.Bep.Viet.model.Recipe;
 import com.example.Bep.Viet.model.User;
-import com.example.Bep.Viet.repository.CategoryRepository;
-import com.example.Bep.Viet.repository.RecipeRepository;
-import com.example.Bep.Viet.repository.UserRepository;
+import com.example.Bep.Viet.repository.*;
 import com.example.Bep.Viet.request.RecipeRequest;
 import com.example.Bep.Viet.response.RecipeIngredientResponse;
 import com.example.Bep.Viet.response.RecipeResponse;
@@ -21,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,6 +30,11 @@ public class RecipeServiceImpl implements RecipeService {
     private final CategoryRepository categoryRepository;
     private final RecipeIngredientService recipeIngredientService;
     private final RecipeStepService recipeStepService;
+    private final RatingRepository ratingRepository;
+    private final MealPlanItemRepository mealPlanItemRepository;
+
+    private static final int CHEF_PRIORITY_DAYS = 30;
+
     @Override
     @Transactional
     public RecipeResponse createRecipe(RecipeRequest request, Long userId) {
@@ -106,7 +110,6 @@ public class RecipeServiceImpl implements RecipeService {
         }
 
         if (!recipe.getName().equals(request.getName())) {
-
             if (repository.existsByNameAndUserIdAndIdNot(request.getName(), currentUserId, id)) {
                 throw new AppException(ErrorCode.RECIPE_NAME_EXISTED);
             }
@@ -128,15 +131,28 @@ public class RecipeServiceImpl implements RecipeService {
         recipe.setDifficulty(findCategoryById(request.getDifficultyId()));
         recipe.setStatus(RecipeStatus.PENDING);
 
-        return mapToResponse(repository.save(recipe));
+        Recipe saved = repository.save(recipe);
+
+        // ✅ ADD THESE - clear old, insert new
+        recipeIngredientService.deleteByRecipeId(saved.getId());
+        recipeIngredientService.addAll(saved, request.getIngredients());
+
+        recipeStepService.deleteByRecipeId(saved.getId());
+        recipeStepService.addAll(saved, request.getSteps());
+
+        return mapToResponse(saved);
     }
 
+    @Transactional
     @Override
-    public void delete(Long id, Long currentUserId) {
+    public void delete(Long id, Long currentUserId, boolean isAdmin) {
         Recipe recipe = findRecipeById(id);
-        if(!recipe.getUser().getId().equals(currentUserId)){
+        if(!isAdmin && !recipe.getUser().getId().equals(currentUserId)){
             throw new AppException(ErrorCode.RECIPE_FORBIDDEN);
         }
+
+        mealPlanItemRepository.deleteByRecipeId(id);
+        ratingRepository.deleteByRecipeId(id);
         repository.delete(recipe);
     }
 
@@ -163,6 +179,15 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     public List<RecipeResponse> getByStatus(RecipeStatus status) {
         return repository.findByStatus(status).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
+    public List<RecipeResponse> getAllRecipeSorted() {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(CHEF_PRIORITY_DAYS);
+        return repository.findAllSortedByRoleAndDate(cutoffDate)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     //helper
@@ -192,6 +217,8 @@ public class RecipeServiceImpl implements RecipeService {
                 .updatedAt(recipe.getUpdatedAt())
                 .userId(recipe.getUser() == null ? null : recipe.getUser().getId())
                 .userName(recipe.getUser() == null ? null : recipe.getUser().getUsername())
+                .userAvatar(recipe.getUser() == null ? null : recipe.getUser().getAvatarUrl())
+                .userRole(recipe.getUser() == null ? null : recipe.getUser().getRole().name())
                 .dishTypeId(recipe.getDishType() == null ? null : recipe.getDishType().getId())
                 .dishTypeName(recipe.getDishType() == null ? null : recipe.getDishType().getName())
                 .regionId(recipe.getRegion() == null ? null : recipe.getRegion().getId())

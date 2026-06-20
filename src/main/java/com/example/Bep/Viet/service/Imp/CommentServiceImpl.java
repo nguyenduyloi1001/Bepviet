@@ -59,7 +59,7 @@ public class CommentServiceImpl implements CommentService {
             notificationService.send(
                     parent.getUser().getId(),
                     userId,
-                    NotificationType.new_answer,
+                    NotificationType.NEW_ANSWER,
                     saved.getId(),
                     notifTargetType
             );
@@ -70,7 +70,7 @@ public class CommentServiceImpl implements CommentService {
                 notificationService.send(
                         contentOwnerId,
                         userId,
-                        NotificationType.new_comment,
+                        NotificationType.NEW_COMMENT,
                         request.getTargetId(),
                         notifTargetType
                 );

@@ -52,8 +52,9 @@ public class MealPlanController {
             @PathVariable Long id,
             @Valid @RequestBody MealPlanItemRequest request,
             @AuthenticationPrincipal Long userId) {
-        return ResponseEntity.ok(service.addItem(id, request, userId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.addItem(id, request, userId));
     }
+
 
     @PutMapping("/{id}/items")
     @PreAuthorize("isAuthenticated()")

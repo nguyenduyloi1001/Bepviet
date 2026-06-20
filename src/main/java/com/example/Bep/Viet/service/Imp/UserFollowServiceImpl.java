@@ -52,7 +52,7 @@ public class UserFollowServiceImpl implements UserFollowService {
         notificationService.send(
                 followingId,
                 followerId,
-                NotificationType.new_follower,
+                NotificationType.NEW_FOLLOWER,
                 followerId,
                 null          // targetType = null (không cần với new_follower)
         );

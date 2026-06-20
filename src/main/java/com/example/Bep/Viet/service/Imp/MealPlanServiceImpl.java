@@ -53,6 +53,9 @@ public class MealPlanServiceImpl implements MealPlanService {
 
     @Override
     public List<MealPlanResponse> getByUserId(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
         return repository.findByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -82,23 +85,21 @@ public class MealPlanServiceImpl implements MealPlanService {
         return mapToResponse(findById(mealPlanId));
     }
 
+    @Transactional
     @Override
     public MealPlanResponse updateItem(Long mealPlanId, MealPlanItemRequest request, Long currentUserId) {
         MealPlan mealPlan = findById(mealPlanId);
         checkOwner(mealPlan, currentUserId);
 
-        itemRepository.deleteByMealPlanIdAndDayOfWeekAndMealTime(
-                mealPlanId, request.getDayOfWeek(), request.getMealTime());
+        MealPlanItem item = itemRepository
+                .findByMealPlanIdAndDayOfWeekAndMealTime(
+                        mealPlanId, request.getDayOfWeek(), request.getMealTime())
+                .orElseThrow(() -> new AppException(ErrorCode.MEAL_PLAN_NOT_FOUND));
 
         Recipe recipe = recipeRepository.findById(request.getRecipeId())
                 .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
 
-        MealPlanItem item = MealPlanItem.builder()
-                .mealPlan(mealPlan)
-                .recipe(recipe)
-                .dayOfWeek(request.getDayOfWeek())
-                .mealTime(request.getMealTime())
-                .build();
+        item.setRecipe(recipe); // update in place, no delete+insert
 
         itemRepository.save(item);
         return mapToResponse(findById(mealPlanId));
@@ -108,10 +109,18 @@ public class MealPlanServiceImpl implements MealPlanService {
     public void removeItem(Long mealPlanId, DayOfWeek dayOfWeek, MealTime mealTime, Long currentUserId) {
         MealPlan mealPlan = findById(mealPlanId);
         checkOwner(mealPlan, currentUserId);
+
+        // Thêm check này
+        if (!itemRepository.existsByMealPlanIdAndDayOfWeekAndMealTime(
+                mealPlanId, dayOfWeek, mealTime)) {
+            throw new AppException(ErrorCode.MEAL_PLAN_NOT_FOUND);
+        }
+
         itemRepository.deleteByMealPlanIdAndDayOfWeekAndMealTime(mealPlanId, dayOfWeek, mealTime);
     }
 
     @Override
+    @Transactional
     public void delete(Long id, Long currentUserId) {
         MealPlan mealPlan = findById(id);
         checkOwner(mealPlan, currentUserId);
