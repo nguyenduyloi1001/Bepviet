@@ -12,6 +12,7 @@ import com.example.Bep.Viet.service.LikeService;
 import com.example.Bep.Viet.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -25,6 +26,7 @@ public class LikeServiceImpl implements LikeService {
     private final NotificationService notificationService;
 
     @Override
+    @Transactional
     public LikeResponse toggle(Long userId, LikeRequest request) {
         Like.TargetType type = request.getTargetType();
         Long targetId = request.getTargetId();
@@ -50,7 +52,7 @@ public class LikeServiceImpl implements LikeService {
                 notificationService.send(
                         ownerId,
                         userId,
-                        NotificationType.new_like,
+                        NotificationType.NEW_LIKE,
                         targetId,
                         mapToNotifTargetType(type)
                 );
@@ -71,6 +73,11 @@ public class LikeServiceImpl implements LikeService {
     public boolean isLiked(Long userId, Long targetId, String targetType) {
         return likeRepository.existsByUserIdAndTargetIdAndTargetType(
                 userId, targetId, Like.TargetType.valueOf(targetType));
+    }
+
+    @Override
+    public long countTotalLikesByUserId(Long userId) {
+        return likeRepository.countTotalLikesByUserId(userId);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────

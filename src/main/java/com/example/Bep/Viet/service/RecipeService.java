@@ -20,7 +20,7 @@ public interface RecipeService {
 
     RecipeResponse updateRecipe(Long id,RecipeRequest request,Long currentUserId);
 
-    void delete(Long id,Long currentUserId);
+    void delete(Long id, Long currentUserId, boolean isAdmin);
 
     RecipeResponse approve(Long id);
 
@@ -29,4 +29,6 @@ public interface RecipeService {
     List<RecipeResponse> getByUserId(Long userId);
 
     List<RecipeResponse> getByStatus(RecipeStatus status);
+
+    List<RecipeResponse> getAllRecipeSorted();
 }

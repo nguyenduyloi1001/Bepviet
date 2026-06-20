@@ -8,16 +8,25 @@ import java.util.List;
 
 public interface NotificationService {
 
-    List<NotificationResponse> getMyNotifications();
-    List<NotificationResponse> getMyUnread();
-    long countUnread();
+    List<NotificationResponse> getMyNotifications(Long userId);
 
-    NotificationResponse markOneAsRead(Long notificationId);
-    void markAllAsRead();
+    List<NotificationResponse> getMyUnread(Long userId);
 
-    void send(Long receiverId,
-              Long actorId,
-              NotificationType type,
-              Long targetId,
-              NotificationTargetType targetType);
+    long countUnread(Long userId);
+
+    NotificationResponse markOneAsRead(Long notificationId, Long currentUserId);
+
+    void markAllAsRead(Long userId);
+
+    NotificationResponse send(Long receiverId,
+                              Long actorId,
+                              NotificationType type,
+                              Long targetId,
+                              NotificationTargetType targetType);
+NotificationResponse send(Long receiverId,
+                          Long actorId,
+                          NotificationType type,
+                          Long targetId,
+                          NotificationTargetType targetType,
+                          String note);
 }

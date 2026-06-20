@@ -36,19 +36,23 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/notifications/**").authenticated()
+
                         // Public hoàn toàn cho luồng đăng nhập
                         .requestMatchers("/api/auth/**").permitAll()
                         // 🔥 SỬA LỖI LOGIC ĐĂNG KÝ: Cho phép bất kỳ ai (chưa đăng nhập) cũng có thể gọi API POST để tạo User
                         .requestMatchers(HttpMethod.POST, "/api/user").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/recipe-tags/**").permitAll()
-
+                        .requestMatchers(HttpMethod.GET, "/api/follow/**").permitAll()
                         // GET public
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/recipes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // 👈 thêm dòng này
                         .requestMatchers(HttpMethod.GET, "/api/ingredients/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/likes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/user/**").permitAll()
 
                         // Chỉ ADMIN
                         .requestMatchers("/api/posts/*/approve").hasRole("ADMIN")

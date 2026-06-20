@@ -72,6 +72,12 @@ public class RecipeStepServiceImpl implements RecipeStepService {
         return repository.findByRecipeIdOrderByStepNumberAsc(recipeId)
                 .stream().map(this::mapToResponse).toList();
     }
+
+    @Override
+    public void deleteByRecipeId(Long recipeId) {
+        repository.deleteByRecipeId(recipeId);
+    }
+
     //help
     private RecipeStep findById(Long id){
         return repository.findById(id).orElseThrow(()-> new AppException(ErrorCode.RECIPE_STEP_NOT_FOUND));

@@ -6,6 +6,8 @@ import com.example.Bep.Viet.exception.AppException;
 import com.example.Bep.Viet.exception.ErrorCode;
 import com.example.Bep.Viet.model.Post;
 import com.example.Bep.Viet.model.User;
+import com.example.Bep.Viet.repository.CommentRepository;
+import com.example.Bep.Viet.repository.LikeRepository;
 import com.example.Bep.Viet.repository.PostRepository;
 import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.PostRequest;
@@ -13,6 +15,7 @@ import com.example.Bep.Viet.response.PostResponse;
 import com.example.Bep.Viet.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 @Service
@@ -20,6 +23,8 @@ import java.util.List;
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
     @Override
     public PostResponse create(PostRequest request, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -36,6 +41,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public PostResponse getPostById(Long id) {
         postRepository.incrementViewCount(id);
         return mapToResponse(findById(id));
@@ -81,11 +87,18 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void delete(Long id, Long currentUserId) {
+    @Transactional
+    public void delete(Long id, Long currentUserId, boolean isAdmin) {
         Post post = findById(id);
-        if (!post.getUser().getId().equals(currentUserId)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+
+        if(!isAdmin && !post.getUser().getId().equals(currentUserId)){
+            throw new AppException(ErrorCode.FORBIDDEN);
         }
+
+//        commentRepository.deleteByPostId(id);
+//        likeRepository.deleteByPostId(id);
+
+        // Xóa post
         postRepository.delete(post);
     }
 

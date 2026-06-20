@@ -15,7 +15,7 @@ public interface PostService {
     List<PostResponse> getByStatus (PostStatus status);
     List<PostResponse> getByType(PostType type);
     PostResponse update(Long id,PostRequest request,Long currentUserId);
-    void delete(Long id,Long currentUserId);
+    void delete(Long id, Long currentUserId, boolean isAdmin);
     PostResponse approve(Long id);
     PostResponse reject(Long id);
 }

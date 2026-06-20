@@ -1,6 +1,11 @@
 package com.example.Bep.Viet.controller;
 
 import com.example.Bep.Viet.enums.RecipeStatus;
+import com.example.Bep.Viet.enums.Role;
+import com.example.Bep.Viet.exception.AppException;
+import com.example.Bep.Viet.exception.ErrorCode;
+import com.example.Bep.Viet.model.User;
+import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.RecipeRequest;
 import com.example.Bep.Viet.response.RecipeResponse;
 import com.example.Bep.Viet.service.RecipeService;
@@ -20,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecipeController {
     private final RecipeService recipeService;
-
+    private final UserRepository userRepository;
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<RecipeResponse> createRecipe(
@@ -43,7 +48,7 @@ public class RecipeController {
 
     @GetMapping
     public ResponseEntity<List<RecipeResponse>> getAllRecipe() {
-        return ResponseEntity.ok(recipeService.getAllRecipe());
+        return ResponseEntity.ok(recipeService.getAllRecipeSorted());
     }
 
     @GetMapping("/search")
@@ -66,11 +71,21 @@ public class RecipeController {
 
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER', 'CHEF', 'BLOGGER')")
     public ResponseEntity<Void> deleteRecipe(
             @PathVariable Long id,
             @AuthenticationPrincipal Long userId) {
-        recipeService.delete(id, userId);
+
+        // ⭐ Lấy user để check role
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // ⭐ Check role CỰC ĐƠN GIẢN - không cần stream
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+        // ⭐ Gọi service
+        recipeService.delete(id, userId, isAdmin);
+
         return ResponseEntity.noContent().build();
     }
 

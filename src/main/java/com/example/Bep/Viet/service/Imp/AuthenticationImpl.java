@@ -1,13 +1,19 @@
 package com.example.Bep.Viet.service.Imp;
 
+import com.example.Bep.Viet.enums.OtpType;
 import com.example.Bep.Viet.exception.AppException;
 import com.example.Bep.Viet.exception.ErrorCode;
 import com.example.Bep.Viet.model.User;
 import com.example.Bep.Viet.repository.UserRepository;
 import com.example.Bep.Viet.request.AuthenticationRequest;
+import com.example.Bep.Viet.request.OtpVerifyRequest;
+import com.example.Bep.Viet.request.ResetPasswordRequest;
+import com.example.Bep.Viet.request.UserRequest;
 import com.example.Bep.Viet.response.AuthenticationResponse;
 import com.example.Bep.Viet.response.UserResponse;
 import com.example.Bep.Viet.service.AuthenticationService;
+import com.example.Bep.Viet.service.OtpService;
+import com.example.Bep.Viet.service.UserService;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -32,6 +38,16 @@ public class AuthenticationImpl implements AuthenticationService {
 
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
+
+    OtpService otpService;
+    UserService userService;
+
+    // Cache lưu tạm thông tin đăng ký chờ verify OTP
+    com.github.benmanes.caffeine.cache.Cache<String, UserRequest> pendingRegisterCache =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .expireAfterWrite(10, java.util.concurrent.TimeUnit.MINUTES)
+                    .maximumSize(500)
+                    .build();
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -59,6 +75,52 @@ public class AuthenticationImpl implements AuthenticationService {
                 .userResponse(userResponse) // Nạp thông tin user sang Frontend
                 .build();
     }
+
+    @Override
+    public void initiateRegister(UserRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        }
+        pendingRegisterCache.put(request.getEmail(), request);
+        otpService.sendOtp(request.getEmail(), OtpType.REGISTER);
+    }
+
+    @Override
+    public void completeRegister(OtpVerifyRequest request) {
+        if (!otpService.verifyOtp(request.getEmail(), request.getOtp(), OtpType.REGISTER)) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+        UserRequest userRequest = pendingRegisterCache.getIfPresent(request.getEmail());
+        if (userRequest == null) {
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+        userService.createUser(userRequest);
+        pendingRegisterCache.invalidate(request.getEmail());
+    }
+
+    // ── FORGOT PASSWORD ───────────────────────────────
+
+    @Override
+    public void initiateForgotPassword(String email) {
+        if (!userRepository.existsByEmail(email)) return; // tránh email enumeration
+        otpService.sendOtp(email, OtpType.FORGOT_PASSWORD);
+    }
+
+    @Override
+    public void verifyForgotPasswordOtp(OtpVerifyRequest request) {
+        if (!otpService.verifyOtp(request.getEmail(), request.getOtp(), OtpType.FORGOT_PASSWORD)) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
     //helper
     private UserResponse mapToUserResponse(User user) {
         return UserResponse.builder()

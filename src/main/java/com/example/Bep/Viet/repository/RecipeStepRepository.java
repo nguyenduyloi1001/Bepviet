@@ -9,4 +9,5 @@ public interface RecipeStepRepository extends JpaRepository<RecipeStep,Long> {
     List<RecipeStep> findByRecipeIdOrderByStepNumberAsc(Long recipeId);
     // tim recipe va sapxeptang dan
     boolean existsByRecipeIdAndStepNumber(Long recipeId, Integer stepNumber); //  kiem tra id co ton tai hay chua
+    void deleteByRecipeId(Long recipeId);
 }

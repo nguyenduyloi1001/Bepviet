@@ -5,6 +5,7 @@ import com.example.Bep.Viet.response.LikeResponse;
 import com.example.Bep.Viet.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +16,7 @@ public class LikeController {
     private final LikeService likeService;
 
     // Toggle like/unlike - cần truyền userId (sau này thay bằng JWT)
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/toggle/{userId}")
     public ResponseEntity<LikeResponse> toggle(
             @PathVariable Long userId,
@@ -37,5 +39,10 @@ public class LikeController {
             @RequestParam Long targetId,
             @RequestParam String targetType) {
         return ResponseEntity.ok(likeService.isLiked(userId, targetId, targetType));
+    }
+
+    @GetMapping("/user/{userId}/count")
+    public ResponseEntity<Long> countUserLikes(@PathVariable Long userId) {
+        return ResponseEntity.ok(likeService.countTotalLikesByUserId(userId));
     }
 }

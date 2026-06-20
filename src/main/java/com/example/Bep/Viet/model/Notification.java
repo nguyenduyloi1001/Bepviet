@@ -45,6 +45,9 @@ public class Notification {
     @Builder.Default
     private Boolean isRead = false;
 
+    @Column(name = "note", length = 500)
+    private String note;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

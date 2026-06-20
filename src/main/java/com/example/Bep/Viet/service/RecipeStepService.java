@@ -12,4 +12,5 @@ public interface RecipeStepService {
     RecipeStepResponse update(Long id, RecipeStepRequest request);
     void delete(Long id);
     List<RecipeStepResponse> getByRecipeId(Long recipeId);
+    void deleteByRecipeId(Long recipeId);
 }
